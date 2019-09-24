@@ -1,7 +1,7 @@
 const path = require('path')
 const express = require('express')
 const hbs = require('hbs')
-const geocode = require('./utils/geocode')
+const { geocode, ownGeocode } = require('./utils/geocode')
 const forecast = require('./utils/forecast')
 
 const app = express()
@@ -42,6 +42,30 @@ app.get('/help', (req, res) => {
     })
 })
 
+app.get('/weather/own', (req, res) => {
+    ownGeocode(req.query.lat, req.query.lon, (error, { longitude, latitude, location } = {}) => { // data is destructured here into lon, lat & location
+        if (error) {
+            return res.send({
+                error: error //function stops
+            })
+        }
+
+        forecast(longitude, latitude, (error, forecastData) => {
+            if (error) {
+                return res.send({
+                    error // shorthand notation (same name), function stops
+                })
+            }
+        
+            res.send({
+                forecast: forecastData,
+                location, //shorthand
+                address: req.query.address
+            })
+        })
+    })
+})
+
 app.get('/weather', (req, res) => {
     if (!req.query.address) {
          return res.send ({ // this exits the function preventing attempt to send header twice
@@ -68,9 +92,6 @@ app.get('/weather', (req, res) => {
                 location, //shorthand
                 address: req.query.address
             })
-           
-            console.log(location)
-            console.log(forecastData)
         })
     })
 })
